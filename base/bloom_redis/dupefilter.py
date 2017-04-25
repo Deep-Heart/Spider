@@ -2,9 +2,9 @@ import time
 
 from scrapy.dupefilters import BaseDupeFilter
 from scrapy.utils.request import request_fingerprint
-from BloomfilterOnRedis import BloomFilter
 
 from . import connection
+from .bloom_filter import BloomFilter
 
 
 class RFPDupeFilter(BaseDupeFilter):
@@ -21,7 +21,7 @@ class RFPDupeFilter(BaseDupeFilter):
         """
         self.server = server
         self.key = key
-        self.bf = BloomFilter(server, key, blockNum=1)  # you can increase blockNum if your are filtering too many urls
+        self.bf = BloomFilter(server, key)  # you can increase blockNum if your are filtering too many urls
 
     @classmethod
     def from_settings(cls, settings):
@@ -29,7 +29,7 @@ class RFPDupeFilter(BaseDupeFilter):
         # create one-time key. needed to support to use this
         # class as standalone dupefilter with scrapy's default scheduler
         # if scrapy passes spider on open() method this wouldn't be needed
-        key = "dupefilter:%s" % int(time.time())
+        key = settings.get('DUPEFILTER_KEY', "spider:dupefilter")
         return cls(server, key)
 
     @classmethod
@@ -43,8 +43,6 @@ class RFPDupeFilter(BaseDupeFilter):
         else:
             self.bf.insert(fp)
             return False
-        # added = self.server.sadd(self.key, fp)
-        # return not added
 
     def close(self, reason):
         """Delete data on close. Called by scrapy's scheduler"""

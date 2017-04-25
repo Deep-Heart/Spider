@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 import re
+
 from scrapy import Selector, Request
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider, Rule
+from scrapy.spiders import Rule
 
+from base.base_spider import SchedulerSpider
 from base.items import BaseUrlItem
 
 
-class HankcsSpider(CrawlSpider):
+class HankcsSpider(SchedulerSpider):
     name = "hankcs"
     allowed_domains = ["hankcs.com"]
     start_urls = ['http://hankcs.com/']
 
     custom_settings = {
-        'ITEM_PIPELINES': {'manongchang.pipelines.ManongchangPipeline': 300}
+        'ITEM_PIPELINES': {'manongchang.pipelines.ManongchangPipeline': 300},
     }
 
     rules = [
@@ -21,6 +23,9 @@ class HankcsSpider(CrawlSpider):
     ]
 
     BASE_URL = 'base_url'
+
+    def __init__(self, *a, **kw):
+        super().__init__({'hours': 3}, *a, **kw)
 
     def parse_start_url(self, response):
         hxs = Selector(response)
@@ -30,10 +35,10 @@ class HankcsSpider(CrawlSpider):
             if str(topic).startswith('http://'):
                 yield Request(topic, callback=self.parse_pages, meta={self.BASE_URL: topic})
 
-        # 首页包含的所有url
-        # generator = self.parse_pages(response)
-        # for f in generator:
-        #     yield f
+                # 首页包含的所有url
+                # generator = self.parse_pages(response)
+                # for f in generator:
+                #     yield f
 
     def parse_pages(self, response):
         hxs = Selector(response)

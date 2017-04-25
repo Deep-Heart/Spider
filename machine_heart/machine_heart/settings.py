@@ -90,5 +90,5 @@ ROBOTSTXT_OBEY = True
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 REDIS_START_URLS_AS_SET = True
-
+LOG_LEVEL = 'INFO'
 MONGO_SERVER, MONGO_PORT, REDIS_HOST, REDIS_PORT = DbConfig.get_db_info()

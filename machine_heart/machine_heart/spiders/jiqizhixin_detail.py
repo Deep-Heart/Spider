@@ -2,9 +2,9 @@
 from datetime import datetime
 
 from scrapy import Selector
-from scrapy_redis.spiders import RedisSpider
 
-from base.items import BaseDetailItem
+from base.bloom_redis.spiders import RedisSpider
+from base.items import BaseDetailItem, ARTICLE_CONTENT, ARTICLE_LINK
 
 
 class JiqizhixinDetailSpider(RedisSpider):
@@ -15,7 +15,10 @@ class JiqizhixinDetailSpider(RedisSpider):
     redis_key = 'jiqizhixin'
 
     custom_settings = {
-        'ITEM_PIPELINES': {'machine_heart.pipelines.JiqizhixinDetailPipeline': 300}
+        'ITEM_PIPELINES': {'machine_heart.pipelines.JiqizhixinDetailPipeline': 300},
+        'SCHEDULER': 'base.bloom_redis.scheduler.Scheduler',
+        'SCHEDULER_PERSIST': True,
+        'SCHEDULER_QUEUE_CLASS': 'base.bloom_redis.queue.SpiderQueue',
     }
 
     def parse(self, response):
@@ -38,10 +41,21 @@ class JiqizhixinDetailSpider(RedisSpider):
         item['publish_time'] = int(publish_time.timestamp())
         item['article_tag'] = hxs.xpath('//span[@class="al-article-tag"]//text()').extract()
 
-        item['article_content'] = ''
         article_content = hxs.xpath('//div[@class="al-article-content"]//p//text()').extract()
-        for content in article_content:
-            item['article_content'] += content
+        article_link = hxs.xpath('//div[@class="al-article-content"]//p//img//@src').extract()
+
+        article = hxs.xpath('//div[@class="al-article-content"]//p//text() |'
+                            ' //div[@class="al-article-content"]//p//img//@src').extract()
+
+        article_type = []
+        for content in article:
+            if content in article_content:
+                article_type.append(ARTICLE_CONTENT)
+            elif content in article_link:
+                article_type.append(ARTICLE_LINK)
+
+        item['article_content'] = article
+        item['article_type'] = article_type
 
         author = hxs.xpath(
             '//div[@class="al-send-msg-to-anchor Smohan_FaceBox al-clearfix"]//h2//text()').extract_first()
@@ -53,10 +67,3 @@ class JiqizhixinDetailSpider(RedisSpider):
         item['author_icon'] = author_icon
 
         yield item
-
-    def make_request_from_data(self, data):
-        url = data.decode('utf-8')
-        if '://' in url:
-            return self.make_requests_from_url(url)
-        else:
-            self.logger.error("Unexpected URL from '%s': %r", self.redis_key, data)

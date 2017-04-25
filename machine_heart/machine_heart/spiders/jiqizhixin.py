@@ -3,12 +3,13 @@ import json
 
 from scrapy import Request, Selector, FormRequest
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import Rule, CrawlSpider
+from scrapy.spiders import Rule
 
+from base.base_spider import SchedulerSpider
 from base.items import BaseUrlItem
 
 
-class JiqizhixinSpider(CrawlSpider):
+class JiqizhixinSpider(SchedulerSpider):
     name = "jiqizhixin"
     allowed_domains = ["jiqizhixin.com"]
     base_url = 'http://jiqizhixin.com'
@@ -25,7 +26,7 @@ class JiqizhixinSpider(CrawlSpider):
     ]
 
     def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
+        super().__init__({'hours': 3}, *a, **kw)
 
     def parse_start_url(self, response):
         hxs = Selector(response)

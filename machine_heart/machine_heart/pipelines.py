@@ -4,27 +4,14 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
-from common.db.mongo.mongo_client import MongoClient
-from common.db.redis.redis_client import RedisClient
+from base.pipelines import BaseUrlPipeline, BaseDetailPipeline
 
 
-class MachineHeartPipeline(object):
+class MachineHeartPipeline(BaseUrlPipeline):
     def __init__(self) -> None:
         super().__init__()
-        self.result_client = RedisClient()
-
-    def process_item(self, item, spider):
-        self.result_client.sadd(spider.name, item['url'])
-        return item
 
 
-class JiqizhixinDetailPipeline(object):
-    collection = 'jiqizhixin'
-
+class JiqizhixinDetailPipeline(BaseDetailPipeline):
     def __init__(self) -> None:
-        super().__init__()
-        self.result_client = MongoClient('detail', self.collection)
-
-    def process_item(self, item, spider):
-        self.result_client.replace_one(self.collection, item, upsert=True)
-        return item
+        super().__init__('jiqizhixin')
